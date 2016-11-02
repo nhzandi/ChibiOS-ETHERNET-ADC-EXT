@@ -78,6 +78,7 @@ THD_WORKING_AREA(wa_udp_echo_server, UDP_THREAD_STACK_SIZE);
 THD_FUNCTION(udp_echo_server, p)
  {
    err_t err, recv_err;
+   char data[100] = "hello";
 
    LWIP_UNUSED_ARG(p);
 
@@ -108,6 +109,8 @@ THD_FUNCTION(udp_echo_server, p)
              for ( i = 0 ; i < 4 ; i++){
 
                buf->addr.addr = 0;
+
+               netbuf_ref(buf, data, sizeof(data));
 
                netconn_send(conn,buf);
               //  netbuf_delete(buf);
