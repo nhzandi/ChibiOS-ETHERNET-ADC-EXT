@@ -36,8 +36,8 @@
 #include "chprintf.h"
 
 
-#define ADC_GRP1_NUM_CHANNELS   2
-#define ADC_GRP1_BUF_DEPTH      8
+#define ADC_GRP1_NUM_CHANNELS   1
+#define ADC_GRP1_BUF_DEPTH      2100
 
 static adcsample_t samples1[ADC_GRP1_NUM_CHANNELS * ADC_GRP1_BUF_DEPTH];
 
@@ -52,6 +52,12 @@ static void adcerrorcallback(ADCDriver *adcp, adcerror_t err) {
   (void)err;
 }
 
+/*
+ * ADC conversion group.
+ * Mode:        Linear buffer, 8 samples of 1 channel, SW triggered.
+ * Channels:    IN19 --> PB.1 --> ADC12.
+ */
+
 static const ADCConversionGroup adcgrpcfg1 = {
   FALSE,
   ADC_GRP1_NUM_CHANNELS,
@@ -59,12 +65,13 @@ static const ADCConversionGroup adcgrpcfg1 = {
   adcerrorcallback,
   0,                        /* CR1 */
   ADC_CR2_SWSTART,          /* CR2 */
-  ADC_SMPR1_SMP_AN11(ADC_SAMPLE_3) | ADC_SMPR1_SMP_AN11(ADC_SAMPLE_3),
-  0,                        /* SMPR2 */
+  0,
+  ADC_SMPR2_SMP_AN9(ADC_SAMPLE_3),  /* SMPR2 */
   ADC_SQR1_NUM_CH(ADC_GRP1_NUM_CHANNELS),
   0,                        /* SQR2 */
-  ADC_SQR3_SQ1_N(ADC_CHANNEL_IN11) | ADC_SQR3_SQ2_N(ADC_CHANNEL_IN12)
+  ADC_SQR3_SQ1_N(ADC_CHANNEL_IN9)
 };
+
 
 
 thread_t *thread_udp = NULL;     //pointer thread2 az noe "thread_t"(ghabele tavajoh ke in type_def dar chibi3 hast)
@@ -79,7 +86,7 @@ THD_WORKING_AREA(wa_udp_echo_server, UDP_THREAD_STACK_SIZE);
 THD_FUNCTION(udp_echo_server, p)
  {
    err_t err, recv_err;
-   char data[100] = "hello";
+   char data[1052];
 
    LWIP_UNUSED_ARG(p);
 
@@ -105,13 +112,21 @@ THD_FUNCTION(udp_echo_server, p)
            while(1){
              chEvtWaitAny((eventmask_t)1);  //montazer mimune ta yek event ya hamun msg_t az intrupt berese
 
-             adcConvert(&ADCD1, &adcgrpcfg1, samples1, ADC_GRP1_BUF_DEPTH);  //ba labe bala ravande yek bar ADC anjam mishavad
+             adcConvert(&ADCD1, &adcgrpcfg1, samples1, ADC_GRP1_BUF_DEPTH);
 
              extChannelDisable(&EXTD1, 0); //disable any external interrupt till end of tranmission of data over ETHERNET
+
+            //  chThdSleepMilliseconds(10);
 
              int i = 0;
 
              for ( i = 0 ; i < 4 ; i++){
+
+               memcpy(&data[2], &samples1[0], sizeof(data));
+
+               data[0] = 's';
+               data[1] = 97 + i;
+
 
                buf->addr.addr = 0;
 
@@ -126,7 +141,7 @@ THD_FUNCTION(udp_echo_server, p)
 
 
              extChannelEnable(&EXTD1, 0);  //enable ext interrupt to catch again
-           }
+           }/*end while (1)*/
          }
        }/*end while (1)*/
      }
@@ -327,6 +342,12 @@ int main(void)
   // sdStart(&SD3, NULL);
 
   /*
+   * Setting up analog inputs used by the demo.
+   */
+  palSetGroupMode(GPIOB, PAL_PORT_BIT(1),
+                  0, PAL_MODE_INPUT_ANALOG);
+
+  /*
    * Creates the blinker thread.
    */
   chThdCreateStatic(waThread1, sizeof(waThread1), NORMALPRIO, Thread1, NULL);
@@ -353,8 +374,8 @@ int main(void)
   /*
    * Creates the TCP echo thread (it changes priority internally).
    */
-  chThdCreateStatic(wa_tcp_echo_server, sizeof(wa_tcp_echo_server), NORMALPRIO + 1,
-                    tcp_echo_server, NULL);
+  // chThdCreateStatic(wa_tcp_echo_server, sizeof(wa_tcp_echo_server), NORMALPRIO + 1,
+  //                   tcp_echo_server, NULL);
 
 
   /*
@@ -366,7 +387,7 @@ int main(void)
   /*
    * Linear conversion.
    */
-  adcConvert(&ADCD1, &adcgrpcfg1, samples1, ADC_GRP1_BUF_DEPTH);
+  // adcConvert(&ADCD1, &adcgrpcfg1, samples1, ADC_GRP1_BUF_DEPTH);
   // chThdSleepMilliseconds(1000);
   chThdSleepMilliseconds(1);
 
