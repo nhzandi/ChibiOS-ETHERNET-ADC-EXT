@@ -67,6 +67,7 @@ static const ADCConversionGroup adcgrpcfg1 = {
 };
 
 
+thread_t *thread_udp = NULL;     //pointer thread2 az noe "thread_t"(ghabele tavajoh ke in type_def dar chibi3 hast)
 /**
  * Stack area for the udp thread.
  */
@@ -102,10 +103,14 @@ THD_FUNCTION(udp_echo_server, p)
            netconn_connect(conn, addr, port);
 
            while(1){
-             //  chEvtWaitAny((eventmask_t)1);  //montazer mimune ta yek event ya hamun msg_t az intrupt berese
-             extChannelDisable(&EXTD1, 0); //disable any external interrupt till end of tranmission
+             chEvtWaitAny((eventmask_t)1);  //montazer mimune ta yek event ya hamun msg_t az intrupt berese
+
+             adcConvert(&ADCD1, &adcgrpcfg1, samples1, ADC_GRP1_BUF_DEPTH);  //ba labe bala ravande yek bar ADC anjam mishavad
+
+             extChannelDisable(&EXTD1, 0); //disable any external interrupt till end of tranmission of data over ETHERNET
 
              int i = 0;
+
              for ( i = 0 ; i < 4 ; i++){
 
                buf->addr.addr = 0;
@@ -228,26 +233,26 @@ static THD_FUNCTION(Thread1, arg)
 
 /********************************************Thread2 implementation*******************************/
 
-thread_t *thread2_p = NULL;     //pointer thread2 az noe "thread_t"(ghabele tavajoh ke in type_def dar chibi3 hast)
-
-
-static THD_WORKING_AREA(waThread2, 128);//ekhtesase fazaye poshte hafeze be thread2 be andaze 128byte
-static THD_FUNCTION(Thread2, arg) {
-
-  (void)arg;
-
-//  chRegSetThreadName("touchpad");    // baraye nam gozariye thread ha mishe az in estefade kard
-
-  while(TRUE) {
-    chEvtWaitAny((eventmask_t)1);  //montazer mimune ta yek event ya hamun msg_t az intrupt berese
-    palSetPad(GPIOE,GPIOD_LED6);
-    chThdSleepMilliseconds(500);
-    palClearPad(GPIOE,GPIOD_LED6);
-    adcConvert(&ADCD1, &adcgrpcfg1, samples1, ADC_GRP1_BUF_DEPTH);  //ba labe bala ravande yek bar ADC anjam mishavad
-    chThdSleepMilliseconds(500);
-
-  }
-}
+// thread_t *thread2_p = NULL;     //pointer thread2 az noe "thread_t"(ghabele tavajoh ke in type_def dar chibi3 hast)
+//
+//
+// static THD_WORKING_AREA(waThread2, 128);//ekhtesase fazaye poshte hafeze be thread2 be andaze 128byte
+// static THD_FUNCTION(Thread2, arg) {
+//
+//   (void)arg;
+//
+// //  chRegSetThreadName("touchpad");    // baraye nam gozariye thread ha mishe az in estefade kard
+//
+//   while(TRUE) {
+//     // chEvtWaitAny((eventmask_t)1);  //montazer mimune ta yek event ya hamun msg_t az intrupt berese
+//     palSetPad(GPIOE,GPIOD_LED6);
+//     chThdSleepMilliseconds(500);
+//     palClearPad(GPIOE,GPIOD_LED6);
+//     adcConvert(&ADCD1, &adcgrpcfg1, samples1, ADC_GRP1_BUF_DEPTH);  //ba labe bala ravande yek bar ADC anjam mishavad
+//     chThdSleepMilliseconds(500);
+//
+//   }
+// }
 
 // /* Triggered when the button is pressed or released. The LED5 is set to ON.*/
 static void extcb1(EXTDriver *extp, expchannel_t channel) {
@@ -268,7 +273,7 @@ static void extcb1(EXTDriver *extp, expchannel_t channel) {
   (void)channel;
 
   chSysLockFromISR();
-  // chEvtSignalI(thread2_p, (eventmask_t)1);  //faal shodan flag baraye thread2
+  chEvtSignalI(thread_udp, (eventmask_t)1);  //faal shodan flag baraye thread2
   chSysUnlockFromISR();
 }
 
@@ -335,13 +340,13 @@ int main(void)
   /*
    * our own thread to be called after EXT
    */
-  thread2_p = chThdCreateStatic(waThread2, sizeof(waThread2), NORMALPRIO, Thread2, NULL); //thread baraye interrupt ba arzeshe normal
+  // thread2_p = chThdCreateStatic(waThread2, sizeof(waThread2), NORMALPRIO, Thread2, NULL); //thread baraye interrupt ba arzeshe normal
 
 
   /*
    * Creates the UDP echo thread (it changes priority internally).
    */
-  chThdCreateStatic(wa_udp_echo_server, sizeof(wa_udp_echo_server), NORMALPRIO + 1,
+  thread_udp = chThdCreateStatic(wa_udp_echo_server, sizeof(wa_udp_echo_server), NORMALPRIO + 1,
                     udp_echo_server, NULL);
 
 
@@ -362,7 +367,8 @@ int main(void)
    * Linear conversion.
    */
   adcConvert(&ADCD1, &adcgrpcfg1, samples1, ADC_GRP1_BUF_DEPTH);
-  chThdSleepMilliseconds(1000);
+  // chThdSleepMilliseconds(1000);
+  chThdSleepMilliseconds(1);
 
   /*
    * Activates the EXT driver 1.
