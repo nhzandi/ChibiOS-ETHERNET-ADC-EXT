@@ -44,10 +44,14 @@
 #define STM32_CLOCK48_REQUIRED              TRUE
 #define STM32_SW                            STM32_SW_PLL
 #define STM32_PLLSRC                        STM32_PLLSRC_HSE
-#define STM32_PLLM_VALUE                    8
-#define STM32_PLLN_VALUE                    336
-#define STM32_PLLP_VALUE                    2
-#define STM32_PLLQ_VALUE                    7
+// #define STM32_PLLM_VALUE                    8
+#define STM32_PLLM_VALUE                    8 /*144MHz HCLK*/
+// #define STM32_PLLN_VALUE                    336
+#define STM32_PLLN_VALUE                    288 /*144MHz HCLK*/
+// #define STM32_PLLP_VALUE                    2
+#define STM32_PLLP_VALUE                    2 /*144MHz HCLK*/
+// #define STM32_PLLQ_VALUE                    7
+#define STM32_PLLQ_VALUE                    6 /*144MHz HCLK*/
 #define STM32_HPRE                          STM32_HPRE_DIV1
 #define STM32_PPRE1                         STM32_PPRE1_DIV4
 #define STM32_PPRE2                         STM32_PPRE2_DIV2
@@ -58,8 +62,10 @@
 #define STM32_MCO2SEL                       STM32_MCO2SEL_SYSCLK
 #define STM32_MCO2PRE                       STM32_MCO2PRE_DIV5
 #define STM32_I2SSRC                        STM32_I2SSRC_CKIN
-#define STM32_PLLI2SN_VALUE                 192
-#define STM32_PLLI2SR_VALUE                 5
+// #define STM32_PLLI2SN_VALUE                 192
+#define STM32_PLLI2SN_VALUE                 192 /*144MHz HCLK*/
+// #define STM32_PLLI2SR_VALUE                 5
+#define STM32_PLLI2SR_VALUE                 2 /*144MHz HCLK*/
 #define STM32_PVD_ENABLE                    FALSE
 #define STM32_PLS                           STM32_PLS_LEV0
 #define STM32_BKPRAM_ENABLE                 FALSE
@@ -67,7 +73,7 @@
 /*
  * ADC driver system settings.
  */
-#define STM32_ADC_ADCPRE                    ADC_CCR_ADCPRE_DIV4
+#define STM32_ADC_ADCPRE                    ADC_CCR_ADCPRE_DIV2
 #define STM32_ADC_USE_ADC1                  TRUE
 #define STM32_ADC_USE_ADC2                  TRUE
 #define STM32_ADC_USE_ADC3                  TRUE

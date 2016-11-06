@@ -37,6 +37,7 @@
 
 
 #define ADC_GRP1_NUM_CHANNELS   1
+// #define ADC_GRP1_BUF_DEPTH      8400
 #define ADC_GRP1_BUF_DEPTH      2100
 
 static adcsample_t samples1[ADC_GRP1_NUM_CHANNELS * ADC_GRP1_BUF_DEPTH];
@@ -55,7 +56,8 @@ static void adcerrorcallback(ADCDriver *adcp, adcerror_t err) {
 /*
  * ADC conversion group.
  * Mode:        Linear buffer, 8 samples of 1 channel, SW triggered.
- * Channels:    IN19 --> PB.1 --> ADC12.
+ * Channels:    IN9 --> PB.1 --> ADC12.
+ *              IN8 --> PB.0 --> ADC12.
  */
 
 static const ADCConversionGroup adcgrpcfg1 = {
@@ -63,10 +65,10 @@ static const ADCConversionGroup adcgrpcfg1 = {
   ADC_GRP1_NUM_CHANNELS,
   NULL,
   adcerrorcallback,
-  0,                        /* CR1 */
+  0,                        /* CR1 */  /*bits25:24--> 00: 12bit, 01: 10bit, 10: 8bit, 11: 6bit*/ /*ADC_CR1_RES_1, ADC_CR1_RES_0, ADC_CR1_RES*/
   ADC_CR2_SWSTART,          /* CR2 */
   0,
-  ADC_SMPR2_SMP_AN9(ADC_SAMPLE_3),  /* SMPR2 */
+  ADC_SMPR2_SMP_AN9(ADC_SAMPLE_28),  /* SMPR2 */
   ADC_SQR1_NUM_CH(ADC_GRP1_NUM_CHANNELS),
   0,                        /* SQR2 */
   ADC_SQR3_SQ1_N(ADC_CHANNEL_IN9)
@@ -86,7 +88,7 @@ THD_WORKING_AREA(wa_udp_echo_server, UDP_THREAD_STACK_SIZE);
 THD_FUNCTION(udp_echo_server, p)
  {
    err_t err, recv_err;
-   char data[1052];
+   char data[1402];
 
    LWIP_UNUSED_ARG(p);
 
@@ -112,17 +114,17 @@ THD_FUNCTION(udp_echo_server, p)
            while(1){
              chEvtWaitAny((eventmask_t)1);  //montazer mimune ta yek event ya hamun msg_t az intrupt berese
 
-             adcConvert(&ADCD1, &adcgrpcfg1, samples1, ADC_GRP1_BUF_DEPTH);
-
              extChannelDisable(&EXTD1, 0); //disable any external interrupt till end of tranmission of data over ETHERNET
+
+             adcConvert(&ADCD1, &adcgrpcfg1, samples1, ADC_GRP1_BUF_DEPTH);
 
             //  chThdSleepMilliseconds(10);
 
              int i = 0;
 
-             for ( i = 0 ; i < 4 ; i++){
+             for ( i = 0 ; i < 3 ; i++){
 
-               memcpy(&data[2], &samples1[0], sizeof(data));
+               memcpy(&data[2], &samples1[i*700], sizeof(data));
 
                data[0] = 's';
                data[1] = 97 + i;
@@ -136,7 +138,7 @@ THD_FUNCTION(udp_echo_server, p)
               //  netbuf_delete(buf);
 
              }
-             chThdSleepMilliseconds(5);
+            //  chThdSleepMilliseconds(5);
 
 
 
@@ -294,7 +296,7 @@ static void extcb1(EXTDriver *extp, expchannel_t channel) {
 
 static const EXTConfig extcfg = {
   {
-    {EXT_CH_MODE_BOTH_EDGES | EXT_CH_MODE_AUTOSTART | EXT_MODE_GPIOA, extcb1},
+    {EXT_CH_MODE_RISING_EDGE | EXT_CH_MODE_AUTOSTART | EXT_MODE_GPIOA, extcb1},
     {EXT_CH_MODE_DISABLED, NULL},
     {EXT_CH_MODE_DISABLED, NULL},
     {EXT_CH_MODE_DISABLED, NULL},
