@@ -97,6 +97,7 @@ include $(CHIBIOS)/os/hal/osal/rt/osal.mk
 include $(CHIBIOS)/os/rt/rt.mk
 include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/port_v7m.mk
 include $(CHIBIOS)/test/rt/test.mk
+include $(CHIBIOS)/os/hal/lib/streams/streams.mk
 include $(CHIBIOS)/os/various/lwip_bindings/lwip.mk
 
 # Define linker script file here
@@ -114,8 +115,7 @@ CSRC = $(STARTUPSRC) \
        $(TESTSRC) \
        $(LWSRC) \
        $(CHIBIOS)/os/various/evtimer.c \
-       $(CHIBIOS)/os/hal/lib/streams/chprintf.c \
-       $(CHIBIOS)/os/hal/lib/streams/memstreams.c \
+       $(STREAMSSRC) \
        main.c
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
@@ -147,7 +147,7 @@ ASMSRC = $(STARTUPASM) $(PORTASM) $(OSALASM)
 
 INCDIR = $(STARTUPINC) $(KERNINC) $(PORTINC) $(OSALINC) \
          $(HALINC) $(PLATFORMINC) $(BOARDINC) $(TESTINC) $(LWINC) \
-         $(CHIBIOS)/os/various $(CHIBIOS)/os/hal/lib/streams web \
+         $(STREAMSINC) $(CHIBIOS)/os/various web \
 
 #
 # Project, sources and paths
